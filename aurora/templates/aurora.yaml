@@ -1,10 +1,30 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: RDS MySQL instance.
 Parameters:
+    VPCId:
+        Description: 'VPC Id'
+        Type: String
+    
+    PrivateSubneta:
+        Description: 'PrivateSubneta'
+        Type: String
+
+    PrivateSubnetb:
+        Description: 'PrivateSubnetb'
+        Type: String
+
+    PrivateSubnetc:
+        Description: 'PrivateSubnetc'
+        Type: String
+
+    EC2SecurityGroup:
+        Description: 'Security group'
+        Type: String
+
     DatabaseName:
-      Default: "kayoAurora"
-      Description: The database name (Default "kayoAurora", change if you are creating more than one database)
-      Type: String
+        Default: "kayoAurora"
+        Description: The database name (Default "kayoAurora", change if you are creating more than one database)
+        Type: String
 
     DatabaseInstanceType:
         Default: db.t2.micro
@@ -76,18 +96,14 @@ Metadata:
                 default: Database Username
 
 Resources:
-    # StackAlarmTopic:
-    #     Type: AWS::SNS::Topic
-    #     Properties:
-    #         DisplayName: Stack Alarm Topic
-
     DatabaseSubnetGroup:
         Type: AWS::RDS::DBSubnetGroup
         Properties:
             DBSubnetGroupDescription: CloudFormation managed DB subnet group.
-            SubnetIds:
-                - !Ref PublicSubnet1
-                - !Ref PublicSubnet2
+            SubnetIds: 
+              - !Ref PrivateSubneta
+              - !Ref PrivateSubnetb
+              - !Ref PrivateSubnetc
 
     ParameterGroup:
         Type: "AWS::RDS::DBParameterGroup"
@@ -118,64 +134,8 @@ Resources:
               Ref: DatabasePassword
             PreferredBackupWindow: 02:00-03:00
             PreferredMaintenanceWindow: mon:03:00-mon:04:00
-            DBSubnetGroupName:
-                Ref: DatabaseSubnetGroup
             VPCSecurityGroups:
-                - Ref: DatabaseSecurityGroup
-
-    # DatabaseCPUAlarm:
-    #     Type: AWS::CloudWatch::Alarm
-    #     Properties:
-    #         AlarmDescription: Primary database CPU utilization is over 80%.
-    #         Namespace: AWS/RDS
-    #         MetricName: CPUUtilization
-    #         Unit: Percent
-    #         Statistic: Average
-    #         Period: 300
-    #         EvaluationPeriods: 2
-    #         Threshold: 80
-    #         ComparisonOperator: GreaterThanOrEqualToThreshold
-    #         Dimensions:
-    #             - Name: DBInstanceIdentifier
-    #               Value:
-    #                   Ref: DatabaseInstance
-    #         AlarmActions:
-    #             - Ref: StackAlarmTopic
-    #         InsufficientDataActions:
-    #             - Ref: StackAlarmTopic
-
-    # DatabaseMemoryAlarm:
-    #     Type: AWS::CloudWatch::Alarm
-    #     Properties:
-    #         AlarmDescription: Primary database freeable memory is under 700MB.
-    #         Namespace: AWS/RDS
-    #         MetricName: FreeableMemory
-    #         Unit: Bytes
-    #         Statistic: Average
-    #         Period: 300
-    #         EvaluationPeriods: 2
-    #         Threshold: 700000000
-    #         ComparisonOperator: LessThanOrEqualToThreshold
-    #         Dimensions:
-    #             - Name: DBInstanceIdentifier
-    #               Value:
-    #                   Ref: DatabaseInstance
-    #         AlarmActions:
-    #             - Ref: StackAlarmTopic
-    #         InsufficientDataActions:
-    #             - Ref: StackAlarmTopic
-    #         OKActions: 
-    #             - Ref: StackAlarmTopic
-
-    VPC: 
-        Type: AWS::EC2::VPC
-        Properties:
-            CidrBlock: "10.192.0.0/16"
-            EnableDnsSupport: "true"
-            EnableDnsHostnames: "true"
-            Tags: 
-                - Key: Name 
-                  Value: !Join ["-", [!Ref DatabaseName, "database"]]
+                - !Ref DatabaseSecurityGroup
 
     InternetGateway:
         Type: AWS::EC2::InternetGateway
@@ -184,75 +144,16 @@ Resources:
                 - Key: Name
                   Value: !Ref DatabaseName
 
-    InternetGatewayAttachment:
-        Type: AWS::EC2::VPCGatewayAttachment
-        Properties:
-            InternetGatewayId: !Ref InternetGateway
-            VpcId: !Ref VPC
-
-    PublicSubnet1: 
-        Type: AWS::EC2::Subnet
-        Properties:
-            VpcId: !Ref VPC
-            AvailabilityZone: !Select [ 0, !GetAZs ]
-            CidrBlock: "10.192.12.0/24"
-            MapPublicIpOnLaunch: true
-            Tags: 
-                - Key: Name 
-                  Value: !Sub ${DatabaseName} Public Subnet (AZ1)
-
-    PublicSubnet2:
-        Type: AWS::EC2::Subnet
-        Properties:
-            VpcId: !Ref VPC
-            AvailabilityZone: !Select [ 1, !GetAZs ]
-            CidrBlock: "10.192.13.0/24"
-            MapPublicIpOnLaunch: true
-            Tags: 
-                - Key: Name 
-                  Value: !Sub ${DatabaseName} Public Subnet (AZ2)
-
-    PublicRouteTable:
-        Type: AWS::EC2::RouteTable
-        Properties: 
-            VpcId: !Ref VPC
-            Tags: 
-                - Key: Name 
-                  Value: !Sub ${DatabaseName} Public Routes
-
-    DefaultPublicRoute: 
-        Type: AWS::EC2::Route
-        DependsOn: InternetGatewayAttachment
-        Properties: 
-            RouteTableId: !Ref PublicRouteTable
-            DestinationCidrBlock: 0.0.0.0/0
-            GatewayId: !Ref InternetGateway
-
-    PublicSubnet1RouteTableAssociation:
-        Type: AWS::EC2::SubnetRouteTableAssociation
-        Properties:
-            RouteTableId: !Ref PublicRouteTable
-            SubnetId: !Ref PublicSubnet1
-
-    PublicSubnet2RouteTableAssociation:
-        Type: AWS::EC2::SubnetRouteTableAssociation
-        Properties:
-            RouteTableId: !Ref PublicRouteTable
-            SubnetId: !Ref PublicSubnet2
-
     DatabaseSecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Properties: 
-            VpcId: !Ref VPC
+            VpcId: !Ref VPCId
             GroupDescription: Access to database
             SecurityGroupIngress:
                 - CidrIp: 0.0.0.0/0
                   FromPort: 3306
                   ToPort: 3306
                   IpProtocol: tcp
-            Tags: 
-                - Key: Name
-                  Value: !Sub ${DatabaseName}-security-group
 
 Outputs:
     DatabaseEndpoint: 

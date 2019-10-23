@@ -4,12 +4,35 @@
     "ParameterValue": "db.t2.small"
   },
   {
+    "ParameterKey": "DatabaseName",
+    "ParameterValue": "conductor"
+  },
+  {
     "ParameterKey": "DatabasePassword",
     "ParameterValue": "conductor"
   },
   {
     "ParameterKey": "DatabaseUsername",
     "ParameterValue": "conductor"
+  },
+  {
+    "ParameterKey": "VPCId",
+    "ParameterValue": "vpc-0ea0e1171fb1b8d55"
+  },
+  {
+    "ParameterKey": "PrivateSubneta",
+    "ParameterValue": "subnet-03d4e0e0a32c4c9c6"
+  },
+  {
+    "ParameterKey": "PrivateSubnetb",
+    "ParameterValue": "subnet-0d752d0329c47703b"
+  },
+  {
+    "ParameterKey": "PrivateSubnetc",
+    "ParameterValue": "subnet-0c668f116a1893dfe"
+  },
+  {
+    "ParameterKey": "EC2SecurityGroup",
+    "ParameterValue": "sg-01d4ae18e3dc85afd"
   }
-
 ]
